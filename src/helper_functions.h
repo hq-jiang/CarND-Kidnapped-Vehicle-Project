@@ -104,7 +104,7 @@ inline bool read_map_data(std::string filename, Map& map) {
 		single_landmark_temp.y_f  = landmark_y_f;
 
 		// Add to landmark list of map:
-		map.landmark_list.push_back(single_landmark_temp);
+    map.landmark_list.push_back(single_landmark_temp);
 	}
 	return true;
 }
