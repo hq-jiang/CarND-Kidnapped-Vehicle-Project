@@ -44,7 +44,27 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	// TODO: Add measurements to each particle and add random Gaussian noise.
 	// NOTE: When adding noise you may find std::normal_distribution and std::default_random_engine useful.
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
-	//  http://www.cplusplus.com/reference/random/default_random_engine/
+    //  http://www.cplusplus.com/reference/random/default_random_engine/
+    default_random_engine gen;
+
+    for (int i=0; i < particles.size(); i++){
+        normal_distribution<double> dist_x(particles[i].x, std_pos[0]);
+        normal_distribution<double> dist_y(particles[i].y, std_pos[1]);
+        normal_distribution<double> dist_theta(particles[i].theta, std_pos[2]);
+        double x = dist_x(gen);
+        double y = dist_y(gen);
+        double theta = dist_theta(gen);
+        if (fabs(yaw_rate) <= 0.0001){
+            particles[i].x = x + velocity/yaw_rate *(sin(theta + yaw_rate*delta_t) - sin(theta));
+            particles[i].y = y + velocity/yaw_rate *(cos(theta + yaw_rate*delta_t) + cos(theta));
+            particles[i].theta = theta + yaw_rate*delta_t;
+        }
+        else{
+            particles[i].x = x + velocity * delta_t * cos(theta);
+            particles[i].y = y + velocity * delta_t * sin(theta);
+            particles[i].theta = theta;
+        }
+    }
 
 }
 
@@ -53,6 +73,7 @@ void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::ve
 	//   observed measurement to this particular landmark.
 	// NOTE: this method will NOT be called by the grading code. But you will probably find it useful to 
 	//   implement this method and use it as a helper during the updateWeights phase.
+
 
 }
 
