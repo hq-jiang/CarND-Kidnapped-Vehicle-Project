@@ -15,6 +15,7 @@
 #include <string>
 #include <iterator>
 #include <initializer_list>
+#include <time.h>
 
 #include "particle_filter.h"
 
@@ -25,13 +26,12 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
 	//   x, y, theta and their uncertainties from GPS) and all weights to 1. 
 	// Add random Gaussian noise to each particle.
 	// NOTE: Consult particle_filter.h for more information about this method (and others in this file).
-  cout << "debug: Enter init" << endl;
   default_random_engine gen;
   normal_distribution<double> dist_x(x, std[0]);
   normal_distribution<double> dist_y(y, std[1]);
   normal_distribution<double> dist_theta(theta, std[2]);
 
-  num_particles = 1;
+  num_particles = 10;
   for (int i=0; i<num_particles; ++i){
     Particle particle;
     particle = {i, dist_x(gen), dist_y(gen), dist_theta(gen), 1};
@@ -49,7 +49,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
 	//  http://en.cppreference.com/w/cpp/numeric/random/normal_distribution
     //  http://www.cplusplus.com/reference/random/default_random_engine/
 
-    cout << "debug: Enter prediction" << endl;
+    clock_t t;
+    t = clock();
+
     default_random_engine gen;
 
     for (int i=0; i < particles.size(); ++i){
@@ -74,6 +76,7 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
             particles[i].theta = theta;
         }
     }
+    //printf("Prediction time: %f\n", (((double)(clock()-t))/CLOCKS_PER_SEC));
 }
 
 void ParticleFilter::dataAssociation(std::vector<LandmarkObs> predicted, std::vector<LandmarkObs>& observations) {
@@ -111,24 +114,23 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
 	//   3.33
 	//   http://planning.cs.uiuc.edu/node99.html
 
-    cout << "debug: Enter update weights" << endl;
+    clock_t t;
+    t = clock();
     for (unsigned int i=0; i<particles.size(); ++i){
         double p_x = particles[i].x;
         double p_y = particles[i].y;
         double p_theta = particles[i].theta;
 
         // transform observations from VEH to MAP coordinates
-        cout << "debug: x " << p_x << endl;
-        cout << "debug: y " << p_y << endl;
-        cout << "debug: theta " << p_theta << endl;
+        //cout << "debug: x " << p_x << endl;
+        //cout << "debug: y " << p_y << endl;
+        //cout << "debug: theta " << p_theta << endl;
         std::vector<LandmarkObs> obs_transform(observations.size());
         for (unsigned int j=0; j<observations.size();j++){
             double obs_x = observations[j].x;
             double obs_y = observations[j].y;
             obs_transform[j].x = p_x + cos(p_theta)*obs_x - sin(p_theta)*obs_y;
             obs_transform[j].y = p_y + sin(p_theta)*obs_x + cos(p_theta)*obs_y;
-            //cout<< "debug: obs_transform.x " << obs_transform[j].x << endl;
-            //cout<< "debug: obs_transform.y " << obs_transform[j].y << endl;
         }
 
 
@@ -138,13 +140,9 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             double lm_x = map_landmarks.landmark_list[j].x_f;
             double lm_y = map_landmarks.landmark_list[j].y_f;
             int lm_id = map_landmarks.landmark_list[j].id_i;
-            // Include landmarks which are a bit farther away than sensor range
-            // to prevent mismatch
-            if (pow(lm_x-p_x,2) + pow(lm_y-p_y,2) < pow(sensor_range+5, 2)){
+            if (pow(lm_x-p_x,2) + pow(lm_y-p_y,2) < pow(sensor_range, 2)){
                 LandmarkObs lm = {lm_id, lm_x, lm_y};
                 predicted.push_back(lm);
-                cout << "debug: landmark x" << lm_x << endl;
-                cout << "debug: landmark y" << lm_y << endl;
             }
         }
         // Assign closest landmarks to observation via id
@@ -171,27 +169,25 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
                     double mu_y = predicted[k].y;
                     particles[i].weight *= exp(-0.5*(pow(obs_x-mu_x,2)*pow(std_landmark[0],2) +
                                   pow(obs_y-mu_y,2)*pow(std_landmark[1],2)));
+                    break;
                 }
+
             }
 
         }
     }
     for (unsigned int i=0; i<particles.size(); ++i){
         weights[i] = particles[i].weight;
-        //cout << "debug: " << weights[i] << endl;
     }
-    //for (int i=0; i<num_particles;i+=100){
-    //    cout << "debug: weights" << weights[i] << endl;
-    //}
-
+    printf("Update time: %f\n", (((double)(clock()-t))/CLOCKS_PER_SEC));
 }
 
 void ParticleFilter::resample() {
 	// TODO: Resample particles with replacement with probability proportional to their weight. 
     // NOTE: You may find std::discrete_distribution helpful here.
 	//   http://en.cppreference.com/w/cpp/numeric/random/discrete_distribution
-    cout << "debug: Enter resample" << endl;
-
+    clock_t t;
+    t = clock();
     random_device rd;
     mt19937 gen(rd());
     discrete_distribution<> d(weights.begin(), weights.end());
@@ -208,7 +204,7 @@ void ParticleFilter::resample() {
         particles_resampled.push_back(p);
     }
     particles = particles_resampled;
-
+    //printf("Resample time: %f\n", (((double)(clock()-t))/CLOCKS_PER_SEC));
 
 }
 
