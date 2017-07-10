@@ -31,7 +31,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   normal_distribution<double> dist_y(y, std[1]);
   normal_distribution<double> dist_theta(theta, std[2]);
 
-  num_particles = 1000;
+  num_particles = 1;
   for (int i=0; i<num_particles; ++i){
     Particle particle;
     particle = {i, dist_x(gen), dist_y(gen), dist_theta(gen), 1};
@@ -57,13 +57,12 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
         normal_distribution<double> dist_y(particles[i].y, std_pos[1]);
         normal_distribution<double> dist_theta(particles[i].theta, std_pos[2]);
 
-
         double x = dist_x(gen);
         double y = dist_y(gen);
         double theta = dist_theta(gen);
-        cout << "debug: x " << x << endl;
-        cout << "debug: y " << y << endl;
-        cout << "debug: theta " << theta << endl;
+        //cout << "debug: x " << x << endl;
+        //cout << "debug: y " << y << endl;
+        //cout << "debug: theta " << theta << endl;
         if (fabs(yaw_rate) >= 0.001){
             particles[i].x = x + velocity/yaw_rate *(sin(theta + yaw_rate*delta_t) - sin(theta));
             particles[i].y = y + velocity/yaw_rate *(- cos(theta + yaw_rate*delta_t) + cos(theta));
@@ -119,13 +118,19 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
         double p_theta = particles[i].theta;
 
         // transform observations from VEH to MAP coordinates
+        cout << "debug: x " << p_x << endl;
+        cout << "debug: y " << p_y << endl;
+        cout << "debug: theta " << p_theta << endl;
         std::vector<LandmarkObs> obs_transform(observations.size());
         for (unsigned int j=0; j<observations.size();j++){
             double obs_x = observations[j].x;
             double obs_y = observations[j].y;
             obs_transform[j].x = p_x + cos(p_theta)*obs_x - sin(p_theta)*obs_y;
             obs_transform[j].y = p_y + sin(p_theta)*obs_x + cos(p_theta)*obs_y;
+            //cout<< "debug: obs_transform.x " << obs_transform[j].x << endl;
+            //cout<< "debug: obs_transform.y " << obs_transform[j].y << endl;
         }
+
 
         // get landmarks within sensor range
         std::vector<LandmarkObs> predicted;
@@ -133,9 +138,13 @@ void ParticleFilter::updateWeights(double sensor_range, double std_landmark[],
             double lm_x = map_landmarks.landmark_list[j].x_f;
             double lm_y = map_landmarks.landmark_list[j].y_f;
             int lm_id = map_landmarks.landmark_list[j].id_i;
-            if (pow(lm_x-p_x,2) + pow(lm_y-p_y,2) < sensor_range){
+            // Include landmarks which are a bit farther away than sensor range
+            // to prevent mismatch
+            if (pow(lm_x-p_x,2) + pow(lm_y-p_y,2) < pow(sensor_range+5, 2)){
                 LandmarkObs lm = {lm_id, lm_x, lm_y};
                 predicted.push_back(lm);
+                cout << "debug: landmark x" << lm_x << endl;
+                cout << "debug: landmark y" << lm_y << endl;
             }
         }
         // Assign closest landmarks to observation via id
