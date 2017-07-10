@@ -31,7 +31,7 @@ void ParticleFilter::init(double x, double y, double theta, double std[]) {
   normal_distribution<double> dist_y(y, std[1]);
   normal_distribution<double> dist_theta(theta, std[2]);
 
-  num_particles = 10;
+  num_particles = 1000;
   for (int i=0; i<num_particles; ++i){
     Particle particle;
     particle = {i, dist_x(gen), dist_y(gen), dist_theta(gen), 1};
@@ -64,9 +64,9 @@ void ParticleFilter::prediction(double delta_t, double std_pos[], double velocit
         cout << "debug: x " << x << endl;
         cout << "debug: y " << y << endl;
         cout << "debug: theta " << theta << endl;
-        if (fabs(yaw_rate) >= 0.0001){
+        if (fabs(yaw_rate) >= 0.001){
             particles[i].x = x + velocity/yaw_rate *(sin(theta + yaw_rate*delta_t) - sin(theta));
-            particles[i].y = y + velocity/yaw_rate *(cos(theta + yaw_rate*delta_t) + cos(theta));
+            particles[i].y = y + velocity/yaw_rate *(- cos(theta + yaw_rate*delta_t) + cos(theta));
             particles[i].theta = theta + yaw_rate*delta_t;
         }
         else{
